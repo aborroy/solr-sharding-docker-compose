@@ -1,0 +1,103 @@
+version: "2"
+
+services:
+    alfresco:
+        image: alfresco/alfresco-content-repository:6.2.2
+        mem_limit: 1500m
+        environment:
+            JAVA_OPTS: "
+                -Ddb.driver=org.postgresql.Driver
+                -Ddb.username=alfresco
+                -Ddb.password=alfresco
+                -Ddb.url=jdbc:postgresql://postgres:5432/alfresco
+                -Dsolr.host=solr6
+                -Dsolr.port=8983
+                -Dsolr.secureComms=none
+                -Dsolr.base.url=/solr
+                -Dsolr.useDynamicShardRegistration=true
+                -Dindex.subsystem.name=solr6
+                -Dalfresco.host=localhost
+                -Dalfresco.port=8080
+                -Daos.baseUrlOverwrite=http://localhost:8080/alfresco/aos
+                -Dmessaging.broker.url=\"failover:(nio://activemq:61616)?timeout=3000&jms.useCompression=true\"
+                -Ddeployment.method=DOCKER_COMPOSE
+
+                -DlocalTransform.core-aio.url=http://transform-core-aio:8090/
+
+                -Dalfresco-pdf-renderer.url=http://transform-core-aio:8090/
+                -Djodconverter.url=http://transform-core-aio:8090/
+                -Dimg.url=http://transform-core-aio:8090/
+                -Dtika.url=http://transform-core-aio:8090/
+                -Dtransform.misc.url=http://transform-core-aio:8090/
+
+                -Dcsrf.filter.enabled=false
+                -Xms1500m -Xmx1500m
+                "
+        ports:
+            - 8080:8080
+
+    transform-core-aio:
+        image: alfresco/alfresco-transform-core-aio:2.3.4
+        mem_limit: 1536m
+        environment:
+            JAVA_OPTS: " -Xms256m -Xmx1536m"
+        ports:
+            - 8090:8090
+
+    postgres:
+        image: postgres:11.7
+        mem_limit: 512m
+        environment:
+            - POSTGRES_PASSWORD=alfresco
+            - POSTGRES_USER=alfresco
+            - POSTGRES_DB=alfresco
+        command: postgres -c max_connections=300 -c log_min_messages=LOG
+        ports:
+            - 5432:5432
+
+    solr6:
+        build:
+          context: ./search
+          args:
+            ALFRESCO_COMMS: none
+            SHARD_ID: "0"
+            SHARD_RANGE: "0-800"
+        mem_limit: 2g
+        environment:
+            - SOLR_ALFRESCO_HOST=alfresco
+            - SOLR_ALFRESCO_PORT=8080
+            - SOLR_SOLR_HOST=solr6
+            - SOLR_SOLR_PORT=8983
+            - SOLR_CREATE_ALFRESCO_DEFAULTS=alfresco,archive
+            - ALFRESCO_SECURE_COMMS=none
+            - "SOLR_JAVA_MEM=-Xms2g -Xmx2g"
+        ports:
+            - 8983:8983
+
+    solr62:
+        build:
+          context: ./search
+          args:
+            ALFRESCO_COMMS: none
+            SHARD_ID: "1"
+            SHARD_RANGE: "801-40000"
+        mem_limit: 2g
+        environment:
+            - SOLR_ALFRESCO_HOST=alfresco
+            - SOLR_ALFRESCO_PORT=8080
+            - SOLR_SOLR_HOST=solr62
+            - SOLR_SOLR_PORT=8983
+            - SOLR_CREATE_ALFRESCO_DEFAULTS=alfresco,archive
+            - ALFRESCO_SECURE_COMMS=none
+            - "SOLR_JAVA_MEM=-Xms2g -Xmx2g"
+        ports:
+            - 8984:8983
+
+    activemq:
+        image: alfresco/alfresco-activemq:5.15.8
+        mem_limit: 1g
+        ports:
+            - 8161:8161
+            - 5672:5672
+            - 61616:61616
+            - 61613:61613
