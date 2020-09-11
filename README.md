@@ -14,6 +14,8 @@ Documentation for Sharding Methods available in https://docs.alfresco.com/sie/co
 * [mod_acl_id](mod_acl_id)
 * [property](property)
 
+* [ssl_db_id](ssl_db_id): Sample on using DB_ID Sharding method configured with mTLS protocol
+
 Every deployment includes 2 SOLR Servers (`solr6` and `solr62`) as sample implementation, but it can be used more if required.
 
 Search Services Docker Image has been customized in order to apply the right properties for every Sharding Method.
